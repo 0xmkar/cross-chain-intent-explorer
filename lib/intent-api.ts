@@ -279,7 +279,6 @@ export async function fetchIntentData(intentId: string): Promise<IntentData> {
     }
 
     const decodedRequestHash = decodeBase64ToHash(requestHash)
-    console.log("Decoded request hash:", decodedRequestHash)
 
     // Fetch deposit and fill events
     const { deposits, fills } = await fetchDepositAndFillEvents(decodedRequestHash)
@@ -287,10 +286,6 @@ export async function fetchIntentData(intentId: string): Promise<IntentData> {
     // Build intent data
     const deposit = deposits[0]
     const fill = fills[0]
-
-    console.log("deposits - ", deposit)
-    console.log("fills - ", fill)
-    console.log("requestForFunds - ", requestForFunds)
 
     // Decode sources
     const decodedSources = requestForFunds.sources.map((source) => ({

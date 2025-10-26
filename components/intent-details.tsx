@@ -128,12 +128,8 @@ export function IntentDetails({ data }: { data: IntentData }) {
       {/* Timestamps */}
       <Card className="p-4 border border-border/60 bg-card/50 backdrop-blur-sm">
         <div className="space-y-3">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Created</p>
-            <p className="text-sm font-mono text-foreground">{formatDate(data.createdAt)}</p>
-          </div>
           {data.depositedAt && (
-            <div className="border-t border-border/40 pt-3">
+            <div>
               <p className="text-xs text-muted-foreground mb-1">Deposited</p>
               <p className="text-sm font-mono text-foreground">{formatDate(data.depositedAt)}</p>
             </div>
