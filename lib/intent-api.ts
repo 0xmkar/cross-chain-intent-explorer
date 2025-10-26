@@ -1,4 +1,4 @@
-import type { IntentData, RequestForFunds, DepositEvent, FillEvent } from "./types"
+import type { IntentData, RequestForFunds, DepositEvent, FillEvent, SettlementEvent, SettlementMatch } from "./types"
 
 const ARCANA_API = "https://cosmos04-dev.arcana.network/xarchain/chainabstraction/request_for_funds"
 const INDEXER_API = "https://indexer.dev.hyperindex.xyz/c72c788/v1/graphql"
@@ -95,6 +95,175 @@ async function fetchDepositAndFillEvents(
   return {
     deposits: result.data?.deposit || [],
     fills: result.data?.fill || [],
+  }
+}
+
+async function fetchSettlementCandidates(
+  timeWindowStart: number,
+  timeWindowEnd: number,
+): Promise<SettlementEvent[]> {
+  const query = `
+    query GetSettlementCandidates(
+      $timeWindowStart: Int!,
+      $timeWindowEnd: Int!
+    ) {
+      settlements: SettleEvent(
+        where: {
+          timestamp: { _gte: $timeWindowStart, _lte: $timeWindowEnd }
+        },
+        order_by: { timestamp: asc }
+      ) {
+        id
+        nonce
+        solvers
+        tokens
+        amounts
+        chainId
+        blockNumber
+        timestamp
+        txHash
+      }
+    }
+  `
+
+  const response = await fetch(INDEXER_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query,
+      variables: { timeWindowStart, timeWindowEnd },
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch settlement candidates: ${response.statusText}`)
+  }
+
+  const result = await response.json()
+
+  if (result.errors) {
+    console.error("GraphQL errors:", result.errors)
+    return []
+  }
+
+  return result.data?.settlements || []
+}
+
+function calculateSettlementConfidence(
+  settlement: SettlementEvent,
+  intentData: IntentData,
+  fillData: FillEvent,
+  depositData: DepositEvent,
+): SettlementMatch {
+  let points = 0
+  const maxPoints = 100
+
+  // Calculate time delta (most important - 40 points)
+  const timeDelta = settlement.timestamp - (intentData.filledAt || 0)
+  const timeDeltaPoints = Math.max(0, 40 - (timeDelta / 60)) // Lose 1 point per minute
+  points += Math.max(0, timeDeltaPoints)
+
+  // Time match - within 10 minutes (15 points)
+  const timeMatch = timeDelta <= 600 // 600 seconds = 10 minutes
+  if (timeMatch) {
+    points += 15
+  }
+
+  // Chain match (25 points)
+  const chainMatch = settlement.chainId === fillData.chainId
+  if (chainMatch) {
+    points += 25
+  }
+
+  // Amount match (15 points) - within 15% tolerance
+  let amountMatch = false
+  if (intentData.destinations && intentData.destinations.length > 0) {
+    const expectedAmount = BigInt(intentData.destinations[0].value)
+    const settlementAmounts = settlement.amounts.map(a => {
+      try {
+        return BigInt(a)
+      } catch {
+        return BigInt(0)
+      }
+    })
+    
+    for (const settlementAmount of settlementAmounts) {
+      const difference = expectedAmount > settlementAmount 
+        ? expectedAmount - settlementAmount 
+        : settlementAmount - expectedAmount
+      const percentDiff = Number(difference * BigInt(100) / expectedAmount)
+      
+      if (percentDiff <= 15) {
+        amountMatch = true
+        points += 15
+        break
+      }
+    }
+  }
+
+  // Token match (5 points)
+  let tokenMatch = false
+  if (intentData.destinations && intentData.destinations.length > 0) {
+    const expectedToken = intentData.destinations[0].tokenAddress.toLowerCase()
+    tokenMatch = settlement.tokens.some(t => t.toLowerCase() === expectedToken)
+    if (tokenMatch) {
+      points += 5
+    }
+  }
+
+  const confidence = Math.min(100, (points / maxPoints) * 100)
+
+  return {
+    settlement,
+    confidence,
+    reasons: {
+      timeDelta,
+      timeMatch,
+      chainMatch,
+      amountMatch,
+      tokenMatch,
+    },
+  }
+}
+
+export async function fetchSettlementMatches(
+  intentData: IntentData,
+  requestHash: string,
+): Promise<SettlementMatch[]> {
+  // If not settled, return empty array
+  if (!intentData.settled || !intentData.filledAt) {
+    return []
+  }
+
+  // Create 60-minute window from filled time
+  const timeWindowStart = intentData.filledAt
+  const timeWindowEnd = intentData.filledAt + (60 * 60) // 60 minutes
+
+  try {
+    // Fetch settlement candidates
+    const settlements = await fetchSettlementCandidates(timeWindowStart, timeWindowEnd)
+
+    // We need the fill and deposit data for matching
+    const { deposits, fills } = await fetchDepositAndFillEvents(requestHash)
+    const deposit = deposits[0]
+    const fill = fills[0]
+
+    if (!fill || !deposit) {
+      return []
+    }
+
+    // Calculate confidence for each settlement
+    const matches = settlements.map(settlement => 
+      calculateSettlementConfidence(settlement, intentData, fill, deposit)
+    )
+
+    // Sort by confidence (highest first)
+    matches.sort((a, b) => b.confidence - a.confidence)
+
+    return matches
+  } catch (error) {
+    console.error("Error fetching settlement matches:", error)
+    return []
   }
 }
 

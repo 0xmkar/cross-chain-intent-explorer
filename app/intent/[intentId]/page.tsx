@@ -9,8 +9,9 @@ import { IntentTimeline } from "@/components/intent-timeline"
 import { IntentDetails } from "@/components/intent-details"
 import { LifecycleStatus } from "@/components/lifecycle-status"
 import { TransactionDetails } from "@/components/transaction-details"
-import { fetchIntentData } from "@/lib/intent-api"
-import type { IntentData } from "@/lib/types"
+import { SettlementDetails } from "@/components/settlement-details"
+import { fetchIntentData, fetchSettlementMatches } from "@/lib/intent-api"
+import type { IntentData, SettlementMatch } from "@/lib/types"
 
 export default function IntentPage() {
   const params = useParams()
@@ -18,6 +19,7 @@ export default function IntentPage() {
   const intentId = params.intentId as string
 
   const [data, setData] = useState<IntentData | null>(null)
+  const [settlementMatches, setSettlementMatches] = useState<SettlementMatch[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,6 +30,28 @@ export default function IntentPage() {
         setError(null)
         const intentData = await fetchIntentData(intentId)
         setData(intentData)
+
+        // If settled, fetch settlement matches
+        if (intentData.settled) {
+          // We need to get the request hash from the signature data
+          // For this we need to make another call or pass it through
+          // For now, let's just fetch it
+          const response = await fetch(
+            `https://cosmos04-dev.arcana.network/xarchain/chainabstraction/request_for_funds/${intentId}`
+          )
+          const requestForFundsData = await response.json()
+          const requestHash = requestForFundsData.requestForFunds.signatureData[0]?.hash
+          
+          if (requestHash) {
+            // Decode the hash
+            const bytes = Buffer.from(requestHash, "base64")
+            const hex = bytes.toString("hex")
+            const decodedHash = "0x" + hex
+            
+            const matches = await fetchSettlementMatches(intentData, decodedHash)
+            setSettlementMatches(matches)
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load intent data")
       } finally {
@@ -85,6 +109,9 @@ export default function IntentPage() {
             <IntentTimeline data={data} />
 
             <TransactionDetails data={data} />
+
+            {/* Settlement Details */}
+            <SettlementDetails matches={settlementMatches} settled={data.settled} />
 
             {/* Details */}
             <IntentDetails data={data} />

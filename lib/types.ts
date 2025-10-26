@@ -76,3 +76,27 @@ export interface IntentData {
   solver: string | null
   fillTxHash: string | null
 }
+
+export interface SettlementEvent {
+  id: string
+  nonce: string
+  solvers: string[]
+  tokens: string[]
+  amounts: string[]
+  chainId: number
+  blockNumber: number
+  timestamp: number
+  txHash: string
+}
+
+export interface SettlementMatch {
+  settlement: SettlementEvent
+  confidence: number
+  reasons: {
+    timeDelta: number // seconds from fill to settlement
+    timeMatch: boolean // within 10 minutes
+    chainMatch: boolean
+    amountMatch: boolean
+    tokenMatch: boolean
+  }
+}
