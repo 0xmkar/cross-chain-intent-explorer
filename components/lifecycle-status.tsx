@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Clock, Zap } from "lucide-react"
+import { CheckCircle2, Clock } from "lucide-react"
 import type { IntentData } from "@/lib/types"
 import { getChainName } from "@/lib/utils"
 
@@ -34,34 +34,20 @@ export function LifecycleStatus({ data }: LifecycleStatusProps) {
 
   const currentStatus = getCurrentStatus()
 
-  // Calculate time elapsed
-  const getTimeElapsed = () => {
-    const createdTime = data.createdAt * 1000
-    const endTime = data.settledAt ? data.settledAt * 1000 : data.filledAt ? data.filledAt * 1000 : Date.now()
-    const elapsed = endTime - createdTime
-    const seconds = Math.floor(elapsed / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-
-    if (hours > 0) return `${hours}h ${minutes % 60}m`
-    if (minutes > 0) return `${minutes}m ${seconds % 60}s`
-    return `${seconds}s`
-  }
-
   return (
     <div className="space-y-6">
       {/* Status Overview */}
       <Card className="p-6 border border-border/60 bg-card/50 backdrop-blur-sm">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-foreground">Status Overview</h2>
+            <h2 className="text-xl font-semibold text-foreground">Status</h2>
             <Badge className={`${currentStatus.color} border`}>{currentStatus.label}</Badge>
           </div>
 
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Lifecycle Progress</span>
+              <span className="text-muted-foreground">Progress</span>
               <span className="font-medium text-foreground">{Math.round(progressPercentage)}%</span>
             </div>
             <Progress value={progressPercentage} className="h-2" />
@@ -88,18 +74,7 @@ export function LifecycleStatus({ data }: LifecycleStatusProps) {
       </Card>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Time Elapsed */}
-        <Card className="p-4 border border-border/60 bg-card/50 backdrop-blur-sm">
-          <div className="flex items-start gap-3">
-            <Zap className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground mb-1">Time Elapsed</p>
-              <p className="text-sm font-semibold text-foreground">{getTimeElapsed()}</p>
-            </div>
-          </div>
-        </Card>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Amount */}
         <Card className="p-4 border border-border/60 bg-card/50 backdrop-blur-sm">
           <div className="flex items-start gap-3">
@@ -109,13 +84,11 @@ export function LifecycleStatus({ data }: LifecycleStatusProps) {
               <p className="text-sm font-semibold text-foreground">
                 {data.sources
                   .reduce((sum, src) => sum + (Number(src.value || "0") / 1e18), 0)
-                  .toFixed(4)}{" "}
-                {data.sources[0]?.tokenAddress?.slice(-4) || "TOKENS"}
+                  .toFixed(4)}{data.sources[0]?.tokenAddress?.slice(-4) || "TOKENS"}
               </p>
             </div>
           </div>
         </Card>
-
 
         {/* Chains Involved */}
         <Card className="p-4 border border-border/60 bg-card/50 backdrop-blur-sm">
@@ -133,8 +106,8 @@ export function LifecycleStatus({ data }: LifecycleStatusProps) {
 
       {/* Status Details */}
       <Card className="p-4 border border-border/60 bg-card/50 backdrop-blur-sm">
-        <h3 className="font-semibold text-foreground mb-4">Status Details</h3>
-        <div className="space-y-3">
+        <h3 className="font-semibold text-foreground mb-4">Details</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Deposited</span>
             <Badge variant={data.deposited ? "default" : "secondary"}>{data.deposited ? "Yes" : "No"}</Badge>

@@ -69,7 +69,7 @@ export function IntentTimeline({ data }: IntentTimelineProps) {
 
   return (
     <Card className="p-8 border border-border/60 bg-card/50 backdrop-blur-sm">
-      <h2 className="text-xl font-semibold text-foreground mb-8">Intent Lifecycle</h2>
+      <h2 className="text-xl font-semibold text-foreground mb-8">Lifecycle</h2>
 
       <div className="space-y-6">
         {stages.map((stage, index) => {

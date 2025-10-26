@@ -59,8 +59,8 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
       <h2 className="text-2xl font-bold text-foreground">Transactions</h2>
 
       {activeTransactions.length === 0 ? (
-        <Card className="p-8 border border-border/60 bg-card/50 backdrop-blur-sm text-center">
-          <p className="text-muted-foreground">No transactions recorded yet</p>
+        <Card className="p-6 border border-border/60 bg-card/50 backdrop-blur-sm text-center">
+          <p className="text-muted-foreground text-sm">No transactions yet</p>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -98,7 +98,7 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/40">
                   {/* Transaction Hash */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Transaction Hash</p>
+                    <p className="text-xs text-muted-foreground mb-2">Hash</p>
                     <div className="flex items-center gap-2">
                       <code className="text-xs font-mono text-foreground bg-background/50 px-2 py-1 rounded flex-1 truncate">
                         {formatHash(tx.hash || "")}
@@ -116,7 +116,7 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
 
                   {/* Chain */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Network</p>
+                    <p className="text-xs text-muted-foreground mb-2">Chain</p>
                     <p className="text-sm font-medium text-foreground">{tx.chainName}</p>
                   </div>
 
@@ -130,14 +130,14 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
 
                   {/* Timestamp */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Timestamp</p>
+                    <p className="text-xs text-muted-foreground mb-2">Time</p>
                     <p className="text-sm font-mono text-foreground">{formatDate(tx.timestamp)}</p>
                   </div>
                 </div>
 
                 {/* Explorer Link */}
-                <div className="pt-2 border-t border-border/40">
-                  {tx.hash && tx.chainID && getExplorerUrl(tx.chainID, tx.hash) ? (
+                {tx.hash && tx.chainID && getExplorerUrl(tx.chainID, tx.hash) && (
+                  <div className="pt-2 border-t border-border/40">
                     <a
                       href={getExplorerUrl(tx.chainID, tx.hash)!}
                       target="_blank"
@@ -147,12 +147,8 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
                       View on Block Explorer
                       <ExternalLink className="w-4 h-4" />
                     </a>
-                  ) : (
-                    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                      Explorer not available for this chain
-                    </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </Card>
           ))}
