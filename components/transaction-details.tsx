@@ -5,41 +5,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Copy, CheckCircle2, Clock } from "lucide-react"
 import type { IntentData } from "@/lib/types"
-import { formatAmount } from '../lib/utils'
+import { formatAmount, getChainName, getExplorerUrl } from '@/lib/utils'
 
 interface TransactionDetailsProps {
   data: IntentData
-}
-
-// Chain ID → Name mapping
-const CHAIN_NAMES: Record<string, string> = {
-  "1": "Ethereum",
-  "42161": "Arbitrum",
-  "137": "Polygon",
-  "10": "Optimism",
-  "56": "BSC",
-  "43114": "Avalanche",
-  "84532" : "Base Sepolia",
-  "11155111": "Ethereum Sepolia"
-}
-
-// Get chain name from chain ID
-const getChainName = (chainId: string | number) => {
-  const id = String(chainId)
-  return CHAIN_NAMES[id] || `Chain ${id}`
-}
-
-// Get block explorer URL
-const getBlockExplorerUrl = (chainName: string, txHash: string) => {
-  const explorers: Record<string, string> = {
-    "Ethereum": "https://etherscan.io/tx/",
-    "Arbitrum": "https://arbiscan.io/tx/",
-    "Polygon": "https://polygonscan.com/tx/",
-    "Optimism": "https://optimistic.etherscan.io/tx/",
-    "BSC": "https://bscscan.com/tx/",
-    "Avalanche": "https://snowtrace.io/tx/",
-  }
-  return (explorers[chainName] || "") + txHash
 }
 
 export function TransactionDetails({ data }: TransactionDetailsProps) {
@@ -65,6 +34,7 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
       hash: data.depositTxHash,
       timestamp: data.depositedAt,
       status: data.deposited ? "completed" : "pending",
+      chainID: data.sources[0]?.chainID,
       chainName: getChainName(data.sources[0]?.chainID),
       amount: formatAmount(data.sources[0]?.value),
       type: "Deposit",
@@ -75,6 +45,7 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
       hash: data.fillTxHash,
       timestamp: data.filledAt,
       status: data.fulfilled ? "completed" : "pending",
+      chainID: data.destinationChainID,
       chainName: getChainName(data.destinationChainID),
       amount: formatAmount(data.destinations[0]?.value),
       type: "Fill",
@@ -130,12 +101,12 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
                     <p className="text-xs text-muted-foreground mb-2">Transaction Hash</p>
                     <div className="flex items-center gap-2">
                       <code className="text-xs font-mono text-foreground bg-background/50 px-2 py-1 rounded flex-1 truncate">
-                        {formatHash(tx.hash)}
+                        {formatHash(tx.hash || "")}
                       </code>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyToClipboard(tx.hash)}
+                        onClick={() => tx.hash && copyToClipboard(tx.hash)}
                         className="flex-shrink-0"
                       >
                         <Copy className="w-4 h-4" />
@@ -166,15 +137,21 @@ export function TransactionDetails({ data }: TransactionDetailsProps) {
 
                 {/* Explorer Link */}
                 <div className="pt-2 border-t border-border/40">
-                  <a
-                    href={getBlockExplorerUrl(tx.chainName, tx.hash)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
-                  >
-                    View on Block Explorer
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                  {tx.hash && tx.chainID && getExplorerUrl(tx.chainID, tx.hash) ? (
+                    <a
+                      href={getExplorerUrl(tx.chainID, tx.hash)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
+                      View on Block Explorer
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                      Explorer not available for this chain
+                    </span>
+                  )}
                 </div>
               </div>
             </Card>

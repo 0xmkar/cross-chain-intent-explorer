@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Copy, ChevronDown, ChevronUp, CheckCircle2, XCircle } from "lucide-react"
 import type { SettlementMatch } from "@/lib/types"
-import { formatAmount, getChainName } from "@/lib/utils"
+import { formatAmount, getChainName, getExplorerUrl } from "@/lib/utils"
 import {
   Collapsible,
   CollapsibleContent,
@@ -39,20 +39,6 @@ export function SettlementDetails({ matches, settled }: SettlementDetailsProps) 
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}m ${remainingSeconds}s`
-  }
-
-  const getBlockExplorerUrl = (chainId: number, txHash: string) => {
-    const explorers: Record<number, string> = {
-      1: "https://etherscan.io/tx/",
-      42161: "https://arbiscan.io/tx/",
-      137: "https://polygonscan.com/tx/",
-      10: "https://optimistic.etherscan.io/tx/",
-      56: "https://bscscan.com/tx/",
-      43114: "https://snowtrace.io/tx/",
-      84532: "https://sepolia.basescan.org/tx/",
-      11155111: "https://sepolia.etherscan.io/tx/",
-    }
-    return (explorers[chainId] || "") + txHash
   }
 
   if (!settled) {
@@ -272,10 +258,10 @@ export function SettlementDetails({ matches, settled }: SettlementDetailsProps) 
           )}
 
           {/* Explorer Link */}
-          {getBlockExplorerUrl(settlement.chainId, settlement.txHash) && (
+          {getExplorerUrl(settlement.chainId, settlement.txHash) && (
             <div className="pt-2 border-t border-border/40">
               <a
-                href={getBlockExplorerUrl(settlement.chainId, settlement.txHash)}
+                href={getExplorerUrl(settlement.chainId, settlement.txHash)!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"

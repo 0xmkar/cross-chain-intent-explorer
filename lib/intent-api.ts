@@ -163,8 +163,8 @@ function calculateSettlementConfidence(
   const timeDeltaPoints = Math.max(0, 40 - (timeDelta / 60)) // Lose 1 point per minute
   points += Math.max(0, timeDeltaPoints)
 
-  // Time match - within 10 minutes (15 points)
-  const timeMatch = timeDelta <= 600 // 600 seconds = 10 minutes
+  // Time match - within 20 minutes (15 points)
+  const timeMatch = timeDelta <= 1200 // 20 minutes
   if (timeMatch) {
     points += 15
   }
